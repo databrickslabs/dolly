@@ -1,4 +1,4 @@
-from dolly.trainer import load_tokenizer, load_training_dataset
+from training.trainer import load_tokenizer, load_training_dataset
 
 def test_tokenizer():
     """Make sure we can encode and decode with the tokenizer"""

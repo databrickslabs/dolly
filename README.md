@@ -6,3 +6,13 @@ To use:
 * Load all the files into a Databricks repo.
 * Start a `12.2 LTS ML (includes Apache Spark 3.3.2, GPU, Scala 2.12)` single-node cluster with node type having 8 A100 GPUs (e.g. `Standard_ND96asr_v4` or `p4d.24xlarge`).
 * Open the `train_dolly` notebook and run it.
+
+## Running Tests
+
+```
+pyenv local 3.8.13
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements_dev.txt
+./run_pytest.sh
+```

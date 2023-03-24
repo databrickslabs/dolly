@@ -56,7 +56,7 @@ logging.getLogger("sh.command").setLevel(logging.ERROR)
 
 import os
 from datetime import datetime
-from dolly.trainer import load_training_dataset, load_tokenizer
+from training.trainer import load_training_dataset, load_tokenizer
 
 dbutils.widgets.text("num_gpus", "", "num_gpus")
 
@@ -104,7 +104,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # COMMAND ----------
 
 # MAGIC !deepspeed {num_gpus_flag} \
-# MAGIC     --module dolly.trainer \
+# MAGIC     --module training.trainer \
 # MAGIC     --deepspeed {deepspeed_config} \
 # MAGIC     --epochs 1 \
 # MAGIC     --local-output-dir {local_output_dir} \
