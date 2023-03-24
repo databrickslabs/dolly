@@ -181,8 +181,8 @@ def train(
         evaluation_strategy="steps",
         eval_steps=10,
         save_strategy="steps",
-        save_steps=1000,
-        save_total_limit=None,
+        save_steps=200,
+        save_total_limit=1,
         load_best_model_at_end=True,
         report_to="tensorboard",
         disable_tqdm=True,
@@ -203,6 +203,9 @@ def train(
 
     logger.info("Training")
     trainer.train()
+
+    logger.info(f"Saving Model to {local_output_dir}")
+    trainer.save_model(output_dir=local_output_dir)
 
     if dbfs_output_dir:
         logger.info(f"Saving Model to {dbfs_output_dir}")
