@@ -1,23 +1,8 @@
-# PROJECT NAME
-Standard Project Template for Databricks Labs Projects
+# Dolly
 
-## Project Description
-Short description of project's purpose
+This fine-tunes the [GPT-J 6B](https://huggingface.co/EleutherAI/gpt-j-6B) model on the [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) dataset using a Databricks notebook.  Please note that while GPT-J 6B is [Apache 2.0 licensed](https://huggingface.co/EleutherAI/gpt-j-6B), the Alpaca dataset is licensed under [Creative Commons NonCommercial (CC BY-NC 4.0)](https://huggingface.co/datasets/tatsu-lab/alpaca).
 
-## Project Support
-Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.
-
-Any issues discovered through the use of this project should be filed as GitHub Issues on the Repo.  They will be reviewed as time permits, but there are no formal SLAs for support.
-
-
-## Building the Project
-Instructions for how to build the project
-
-## Deploying / Installing the Project
-Instructions for how to deploy the project, or install it
-
-## Releasing the Project
-Instructions for how to release a version of the project
-
-## Using the Project
-Simple examples on how to use the project
+To use:
+* Load all the files into a Databricks repo.
+* Start a `12.2 LTS ML (includes Apache Spark 3.3.2, GPU, Scala 2.12)` single-node cluster with node type having 8 A100 GPUs (e.g. `Standard_ND96asr_v4` or `p4d.24xlarge`).
+* Open the `train_dolly` notebook and run it.

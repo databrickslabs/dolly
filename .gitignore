@@ -1,0 +1,8 @@
+.dbx/
+venv/
+.venv/
+.python-version
+__pycache__/
+htmlcov/
+.pytest_cache/
+.coverage
