@@ -79,6 +79,16 @@ def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, spli
     logger.info(f"Loading {training_data_id} dataset")
     dataset: Dataset = load_dataset(training_data_id)[split]
     logger.info("Found %d rows", dataset.num_rows)
+
+    # Remove empty responses
+    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith("### Response:"))
+
+    def _func(rec):
+        rec["text"] += "\n\n### End"
+        return rec
+
+    dataset = dataset.map(_func)
+
     return dataset
 
 
