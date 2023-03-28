@@ -189,7 +189,7 @@ def train(
         logging_strategy="steps",
         logging_steps=10,
         evaluation_strategy="steps",
-        eval_steps=10,
+        eval_steps=200,
         save_strategy="steps",
         save_steps=200,
         save_total_limit=1,
