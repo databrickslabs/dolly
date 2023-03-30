@@ -29,20 +29,26 @@ from transformers import (
     set_seed,
 )
 
-logger = logging.getLogger(__name__)
+from .consts import (
+    DEFAULT_INPUT_MODEL,
+    DEFAULT_SEED,
+    DEFAULT_TRAINING_DATASET,
+    END_KEY,
+    INSTRUCTION_KEY,
+    RESPONSE_KEY,
+    RESPONSE_KEY_NL,
+)
 
-DEFAULT_TRAINING_DATASET = "tatsu-lab/alpaca"
-DEFAULT_INPUT_MODEL = "EleutherAI/gpt-j-6B"
-RESPONSE_KEY = "### Response:\n"
-DEFAULT_SEED = 42
-MAX_LENGTH = 1024
+logger = logging.getLogger(__name__)
 
 
 class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
     def torch_call(self, examples: List[Union[List[int], Any, Dict[str, Any]]]) -> Dict[str, Any]:
         batch = super().torch_call(examples)
 
-        response_token_ids = self.tokenizer.encode(RESPONSE_KEY)
+        # The prompt ends with the response key plus a newline.  We encode this and then try to find it in the
+        # sequence of tokens.
+        response_token_ids = self.tokenizer.encode(RESPONSE_KEY_NL)
 
         labels = batch["labels"].clone()
 
@@ -67,7 +73,7 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
         return batch
 
 
-def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_length: int = MAX_LENGTH) -> dict:
+def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_length: int) -> dict:
     return tokenizer(
         batch["text"],
         max_length=max_length,
@@ -81,10 +87,10 @@ def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, spli
     logger.info("Found %d rows", dataset.num_rows)
 
     # Remove empty responses
-    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith("### Response:"))
+    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith(RESPONSE_KEY))
 
     def _func(rec):
-        rec["text"] += "\n\n### End"
+        rec["text"] += f"\n\n{END_KEY}"
         return rec
 
     dataset = dataset.map(_func)
@@ -114,15 +120,18 @@ def get_model_tokenizer(
 ) -> Tuple[AutoModelForCausalLM, PreTrainedTokenizer]:
     tokenizer = load_tokenizer(pretrained_model_name_or_path)
     model = load_model(pretrained_model_name_or_path, gradient_checkpointing=gradient_checkpointing)
+    tokenizer.add_special_tokens({"additional_special_tokens": [END_KEY, INSTRUCTION_KEY, RESPONSE_KEY]})
+    model.resize_token_embeddings(len(tokenizer))
+
     return model, tokenizer
 
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int = MAX_LENGTH, seed=DEFAULT_SEED) -> Dataset:
+def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_SEED) -> Dataset:
     """Loads the training dataset and tokenizes it so it is ready for training.
 
     Args:
         tokenizer (AutoTokenizer): Tokenizer tied to the model.
-        max_length (int, optional): Maximum number of tokens to emit from tokenizer. Defaults to MAX_INPUT_LENGTH.
+        max_length (int): Maximum number of tokens to emit from tokenizer.
 
     Returns:
         Dataset: HuggingFace dataset
@@ -164,7 +173,10 @@ def train(
 
     model, tokenizer = get_model_tokenizer(gradient_checkpointing=gradient_checkpointing)
 
-    processed_dataset = preprocess_dataset(tokenizer=tokenizer, seed=seed)
+    # Use the same max length that the model supports
+    max_length: int = model.config.n_positions
+
+    processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
 
     split_dataset = processed_dataset.train_test_split(test_size=test_size, seed=seed)
 
@@ -225,9 +237,7 @@ def train(
 
 
 @click.command()
-@click.option(
-    "--local-output-dir", type=str, help="Write directly to this local path", required=True
-)
+@click.option("--local-output-dir", type=str, help="Write directly to this local path", required=True)
 @click.option("--dbfs-output-dir", type=str, help="Sync data to this path on DBFS")
 @click.option("--epochs", type=int, default=3, help="Number of epochs to train for.")
 @click.option("--per-device-train-batch-size", type=int, default=8, help="Batch size to use for training.")
