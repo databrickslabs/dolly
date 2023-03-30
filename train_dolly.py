@@ -59,6 +59,8 @@ from datetime import datetime
 from training.trainer import load_training_dataset, load_tokenizer
 
 dbutils.widgets.text("num_gpus", "", "num_gpus")
+dbutils.widgets.text("local_training_root", "", "local_training_root")
+dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 
 # COMMAND ----------
 
@@ -75,12 +77,27 @@ checkpoint_dir_name = f"{model_name}__{timestamp}"
 root_path = os.getcwd()
 deepspeed_config = os.path.join(root_path, "config/ds_z3_bf16_config.json")
 
-local_training_root = os.path.join(os.path.expanduser('~'), "dolly_training")
+dolly_training_dir_name = "dolly_training"
+
+# Use the local training root path if it was provided.  Otherwise try to find a sensible default.
+local_training_root = dbutils.widgets.get("local_training_root")
+if not local_training_root:
+    # Use preferred path when working in a Databricks cluster if it exists.
+    if os.path.exists("/local_disk0"):
+        local_training_root = os.path.join("/local_disk0", dolly_training_dir_name)
+    # Otherwise use the home directory.
+    else:
+        local_training_root = os.path.join(os.path.expanduser('~'), dolly_training_dir_name)
+
+dbfs_output_root = dbutils.widgets.get("dbfs_output_root")
+if not dbfs_output_root:
+    dbfs_output_root = f"/dbfs/{dolly_training_dir_name}"
 
 os.makedirs(local_training_root, exist_ok=True)
+os.makedirs(dbfs_output_root, exist_ok=True)
 
 local_output_dir = os.path.join(local_training_root, checkpoint_dir_name)
-dbfs_output_dir = os.path.join("/dbfs/dolly_training", checkpoint_dir_name)
+dbfs_output_dir = os.path.join(dbfs_output_root, checkpoint_dir_name)
 
 num_gpus_flag = ""
 num_gpus = dbutils.widgets.get("num_gpus")
