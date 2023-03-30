@@ -1,9 +1,11 @@
 # Dolly
-Databricks’ Dolly, a large language model trained on the [Databricks Machine Learning Platform](https://www.databricks.com/product/machine-learning), demonstrates that a two-years-old open source model ([GPT-J](https://huggingface.co/EleutherAI/gpt-j-6B)) can, when subjected to just 30 minutes of fine tuning on a focused corpus of 50k records ([Stanford Alpaca](https://crfm.stanford.edu/2023/03/13/alpaca.html)), exhibit surprisingly high quality instruction following behavior not characteristic of the foundation model on which it is based.  We believe this finding is important because it demonstrates that the ability to create powerful artificial intelligence technologies is vastly more accessible than previously realized.
+Databricks’ [Dolly](https://huggingface.co/databricks/dolly-v1-6b), a large language model trained on the [Databricks Machine Learning Platform](https://www.databricks.com/product/machine-learning), demonstrates that a two-years-old open source model ([GPT-J](https://huggingface.co/EleutherAI/gpt-j-6B)) can, when subjected to just 30 minutes of fine tuning on a focused corpus of 50k records ([Stanford Alpaca](https://crfm.stanford.edu/2023/03/13/alpaca.html)), exhibit surprisingly high quality instruction following behavior not characteristic of the foundation model on which it is based.  We believe this finding is important because it demonstrates that the ability to create powerful artificial intelligence technologies is vastly more accessible than previously realized.
 
 Databricks is committed to ensuring that every organization and individual benefits from the transformative power of artificial intelligence. The Dolly model family represents our first steps along this journey, and we’re excited to share this technology with the world.
 
 Please note that while GPT-J 6B is [Apache 2.0 licensed](https://huggingface.co/EleutherAI/gpt-j-6B), the Alpaca dataset is licensed under [Creative Commons NonCommercial (CC BY-NC 4.0)](https://huggingface.co/datasets/tatsu-lab/alpaca). 
+
+The model is available on Hugging Face as [databricks/dolly-v1-6b](https://huggingface.co/databricks/dolly-v1-6b).
 
 **Dolly is intended exclusively for research purposes and is not licensed for commercial use.**
 
@@ -21,7 +23,68 @@ Like its base model, dolly-6b has six billion parameters consisting of 28 transf
 
 The Dolly model family is under active development, and so any list of shortcomings is unlikely to be exhaustive, but we include known limitations and misfires here as a means to document and share our preliminary findings with the community.  In particular, `dolly-6b` struggles with syntactically complex prompts, mathematical operations, factual errors, dates and times, open-ended question answering, hallucination, enumerating lists of specific length, and stylistic mimicry.  
 
-## Get Started Training
+## Getting Started with Response Generation
+
+If you'd like to simply test the model without training, the model is available on Hugging Face as [databricks/dolly-v1-6b](https://huggingface.co/databricks/dolly-v1-6b).
+
+First, load the model and tokenizer:
+
+```
+import numpy as np
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizer
+)
+
+tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v1-6b", padding_side="left")
+model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v1-6b", device_map="auto", trust_remote_code=True)
+```
+
+Next, try generating a response:
+
+```
+PROMPT_FORMAT = """Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+{instruction}
+
+### Response:
+"""
+
+def generate_response(instruction: str, *, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, 
+                      do_sample: bool = True, max_new_tokens: int = 256, top_p: float = 0.92, top_k: int = 0, **kwargs) -> str:
+    input_ids = tokenizer(PROMPT_FORMAT.format(instruction=instruction), return_tensors="pt").input_ids.to("cuda")
+
+    # each of these is encoded to a single token
+    response_key_token_id = tokenizer.encode("### Response:")[0]
+    end_key_token_id = tokenizer.encode("### End")[0]
+
+    gen_tokens = model.generate(input_ids, pad_token_id=tokenizer.pad_token_id, eos_token_id=end_key_token_id,
+                                do_sample=do_sample, max_new_tokens=max_new_tokens, top_p=top_p, top_k=top_k, **kwargs)[0].cpu()
+
+    # find where the response begins
+    response_positions = np.where(gen_tokens == response_key_token_id)[0]
+
+    if len(response_positions) >= 0:
+        response_pos = response_positions[0]
+        
+        # find where the response ends
+        end_pos = None
+        end_positions = np.where(gen_tokens == end_key_token_id)[0]
+        if len(end_positions) > 0:
+            end_pos = end_positions[0]
+
+        return tokenizer.decode(gen_tokens[response_pos + 1 : end_pos]).strip()
+
+    return None
+
+# Sample similar to: "Excited to announce the release of Dolly, a powerful new language model from Databricks! #AI #Databricks"
+generate_response("Write a tweet announcing Dolly, a large language model from Databricks.", model=model, tokenizer=tokenizer)
+```
+
+## Getting Started with Training
 
 * Add the `dolly` repo to Databricks (under Repos click Add Repo, enter `https://github.com/databrickslabs/dolly.git`, then click Create Repo).
 * Start a `12.2 LTS ML (includes Apache Spark 3.3.2, GPU, Scala 2.12)` single-node cluster with node type having 8 A100 GPUs (e.g. `Standard_ND96asr_v4` or `p4d.24xlarge`). Note that these instance types may not be available in all regions, or may be difficult to provision. In Databricks, note that you must select the GPU runtime first, and unselect "Use Photon", for these instance types to appear (where supported).
