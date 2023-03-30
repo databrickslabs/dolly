@@ -35,7 +35,6 @@ from .consts import (
     DEFAULT_TRAINING_DATASET,
     END_KEY,
     INSTRUCTION_KEY,
-    RESPONSE_KEY,
     RESPONSE_KEY_NL,
 )
 
@@ -47,7 +46,7 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
         batch = super().torch_call(examples)
 
         # The prompt ends with the response key plus a newline.  We encode this and then try to find it in the
-        # sequence of tokens.
+        # sequence of tokens.  This should just be a single token.
         response_token_ids = self.tokenizer.encode(RESPONSE_KEY_NL)
 
         labels = batch["labels"].clone()
@@ -56,14 +55,15 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
 
             response_token_ids_start_idx = None
             for idx in np.where(batch["labels"][i] == response_token_ids[0])[0]:
-                if np.array_equal(response_token_ids, batch["labels"][i, idx : idx + len(response_token_ids)]):
-                    response_token_ids_start_idx = idx
-                    break
+                response_token_ids_start_idx = idx
+                break
 
             if response_token_ids_start_idx is None:
-                raise RuntimeError("Could not find response key token IDs")
+                raise RuntimeError(
+                    f'Could not find response key {response_token_ids} in token IDs {batch["labels"][i]}'
+                )
 
-            response_token_ids_end_idx = response_token_ids_start_idx + len(response_token_ids)
+            response_token_ids_end_idx = response_token_ids_start_idx + 1
 
             # Make pytorch loss function ignore all tokens up through the end of the response key
             labels[i, :response_token_ids_end_idx] = -100
@@ -87,7 +87,8 @@ def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, spli
     logger.info("Found %d rows", dataset.num_rows)
 
     # Remove empty responses
-    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith(RESPONSE_KEY))
+    response_key_stripped = RESPONSE_KEY_NL.strip()
+    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith(response_key_stripped))
 
     def _func(rec):
         rec["text"] += f"\n\n{END_KEY}"
@@ -102,6 +103,7 @@ def load_tokenizer(pretrained_model_name_or_path: str = DEFAULT_INPUT_MODEL) -> 
     logger.info(f"Loading tokenizer for {pretrained_model_name_or_path}")
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path)
     tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.add_special_tokens({"additional_special_tokens": [END_KEY, INSTRUCTION_KEY, RESPONSE_KEY_NL]})
     return tokenizer
 
 
@@ -120,7 +122,6 @@ def get_model_tokenizer(
 ) -> Tuple[AutoModelForCausalLM, PreTrainedTokenizer]:
     tokenizer = load_tokenizer(pretrained_model_name_or_path)
     model = load_model(pretrained_model_name_or_path, gradient_checkpointing=gradient_checkpointing)
-    tokenizer.add_special_tokens({"additional_special_tokens": [END_KEY, INSTRUCTION_KEY, RESPONSE_KEY]})
     model.resize_token_embeddings(len(tokenizer))
 
     return model, tokenizer
@@ -173,8 +174,11 @@ def train(
 
     model, tokenizer = get_model_tokenizer(gradient_checkpointing=gradient_checkpointing)
 
-    # Use the same max length that the model supports
-    max_length: int = model.config.n_positions
+    # Use the same max length that the model supports.  Try a couple different keys in case a different
+    # model is used.  The default model uses n_positions.  If no config settings can be found just default
+    # to 1024 as this is probably supported by most models.
+    conf = model.config
+    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_lenth", 1024))
 
     processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
 
