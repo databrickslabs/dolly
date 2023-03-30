@@ -1,9 +1,8 @@
 DEFAULT_TRAINING_DATASET = "tatsu-lab/alpaca"
 DEFAULT_INPUT_MODEL = "EleutherAI/gpt-j-6B"
-RESPONSE_KEY = "### Response:"
 END_KEY = "### End"
 INSTRUCTION_KEY = "### Instruction:"
-RESPONSE_KEY_NL = f"{RESPONSE_KEY}\n"
+RESPONSE_KEY_NL = f"### Response:\n"
 DEFAULT_SEED = 42
 
 # The format of the instruction the model has been trained on.

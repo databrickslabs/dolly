@@ -9,7 +9,7 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
-from .consts import END_KEY, PROMPT_FORMAT, RESPONSE_KEY
+from .consts import END_KEY, PROMPT_FORMAT, RESPONSE_KEY_NL
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ def generate_response(
     """
     input_ids = tokenizer(PROMPT_FORMAT.format(instruction=instruction), return_tensors="pt").input_ids.to("cuda")
 
-    response_key_token_id = get_special_token_id(tokenizer, RESPONSE_KEY)
+    response_key_token_id = get_special_token_id(tokenizer, RESPONSE_KEY_NL)
     end_key_token_id = get_special_token_id(tokenizer, END_KEY)
 
     gen_tokens = model.generate(
