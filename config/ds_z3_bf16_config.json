@@ -33,7 +33,7 @@
     },
     "tensorboard": {
         "enabled": true,
-        "output_path": "/home/bo_ling/dolly/dolly_training/tf_logs/",
+        "output_path": "/home/bo_ling/dolly_training/tf_logs/",
         "job_name": "dolly_tf_board"
     },
     "gradient_accumulation_steps": "auto",
