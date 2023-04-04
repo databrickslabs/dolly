@@ -31,6 +31,11 @@
       "stage3_max_reuse_distance": 1e9,
       "stage3_gather_16bit_weights_on_model_save": true
     },
+    "tensorboard": {
+        "enabled": true,
+        "output_path": "/home/bo_ling/dolly/dolly_training/tf_logs/",
+        "job_name": "dolly_tf_board"
+    },
     "gradient_accumulation_steps": "auto",
     "gradient_clipping": "auto",
     "steps_per_print": 2000,
