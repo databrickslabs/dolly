@@ -46,11 +46,14 @@ PROMPT_FORMAT = """{instruction}
 ### Questions:
 {input_text}
 
-### Response:
-{output_text}
+### Response:{output_text}
 """
 
-def create_data_set_from_json_list(json_list_file="/home/bo_ling/dolly/ma_data/so3_long.jsonl"):
+def create_data_set_from_json_list(json_list_file="/home/bo_ling/dolly/ma_data/so3_long.jsonl", 
+                                   max_question_length:int=500, max_answer_length:int=500):
+    """
+    Tokens are important to understand because GPT-J, like other language models, have a maximum context length of 2048 tokens, or roughly 1500 words.
+    """
     def gen():
         with open(json_list_file) as file:
             while True:
@@ -68,8 +71,8 @@ def create_data_set_from_json_list(json_list_file="/home/bo_ling/dolly/ma_data/s
                     data = json.loads(line.replace("\\", ""))
 
                 instruction = "Answer the following MA helpdesk questions:"
-                input_text = data["prompt"]
-                output_text = data["completion"]
+                input_text = data["prompt"][:max_question_length]
+                output_text = "\n" + data["completion"][:max_answer_length]
                 text = PROMPT_FORMAT.format(instruction=instruction,input_text=input_text,output_text=output_text)
 
                 yield{
@@ -101,6 +104,7 @@ class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
                 break
 
             if response_token_ids_start_idx is None:
+                print(f"========== {examples[i]}; {labels[i]}; {response_token_ids[0]}==========")
                 raise RuntimeError(
                     f'Could not find response key {response_token_ids} in token IDs {batch["labels"][i]}'
                 )
@@ -123,10 +127,15 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
     )
 
 
-def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, split: str = "train") -> Dataset:
+def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, split: str = "train", 
+                         local_data_file_path: str="") -> Dataset:
     logger.info(f"Loading {training_data_id} dataset")
-    # dataset: Dataset = load_dataset(training_data_id)[split]
-    dataset: Dataset = create_data_set_from_json_list()
+    if local_data_file_path: 
+        print(f"===============loading local dataset from file: {local_data_file_path}=====================")
+        dataset: Dataset = create_data_set_from_json_list(local_data_file_path)
+    else:
+        print(f"===============loading public dataset: {training_data_id}=====================")
+        dataset: Dataset = load_dataset(training_data_id)[split]
     logger.info("Found %d rows", dataset.num_rows)
 
     # Remove empty responses
@@ -170,7 +179,8 @@ def get_model_tokenizer(
     return model, tokenizer
 
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_SEED) -> Dataset:
+def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_SEED, 
+                      local_data_file_path: str = "") -> Dataset:
     """Loads the training dataset and tokenizes it so it is ready for training.
 
     Args:
@@ -181,7 +191,7 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_S
         Dataset: HuggingFace dataset
     """
 
-    dataset = load_training_dataset()
+    dataset = load_training_dataset(local_data_file_path=local_data_file_path)
 
     logger.info("Preprocessing dataset")
     _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
@@ -211,6 +221,7 @@ def train(
     gradient_checkpointing,
     local_rank,
     bf16,
+    local_data_file_path="",
     test_size=1000,
 ):
     set_seed(seed)
@@ -221,9 +232,11 @@ def train(
     # model is used.  The default model uses n_positions.  If no config settings can be found just default
     # to 1024 as this is probably supported by most models.
     conf = model.config
-    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_lenth", 1024))
+    default_length = 2048
+    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_lenth", default_length))
 
-    processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
+    processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed,
+                                           local_data_file_path=local_data_file_path)
 
     split_dataset = processed_dataset.train_test_split(test_size=test_size, seed=seed)
 
@@ -292,6 +305,7 @@ def train(
 @click.option("--lr", type=float, default=1e-5, help="Learning rate to use for training.")
 @click.option("--seed", type=int, default=DEFAULT_SEED, help="Seed to use for training.")
 @click.option("--deepspeed", type=str, default=None, help="Path to deepspeed config file.")
+@click.option("--local-data-file-path", type=str, default="", help="""The local training data with list of json with `prompt` and `completion` as the key""")
 @click.option("--test-size", type=int, default=1000, help="Path to deepspeed config file.")
 @click.option(
     "--gradient-checkpointing/--no-gradient-checkpointing",
