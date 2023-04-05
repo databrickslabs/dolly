@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import json
 from functools import partial
 from typing import Any, Dict, List, Tuple, Union
 
@@ -39,6 +40,47 @@ from .consts import (
 )
 
 logger = logging.getLogger(__name__)
+
+PROMPT_FORMAT = """{instruction}
+
+### Questions:
+{input_text}
+
+### Response:
+{output_text}
+"""
+
+def create_data_set_from_json_list(json_list_file="/home/bo_ling/dolly/ma_data/so3_long.jsonl"):
+    def gen():
+        with open(json_list_file) as file:
+            while True:
+                line = file.readline()
+
+                # if line is empty
+                # end of file is reached
+                if not line:
+                    break 
+                try:
+                    data = json.loads(line)
+
+                except:
+                    # print(f"BAD DATA: {line}")
+                    data = json.loads(line.replace("\\", ""))
+
+                instruction = "Answer the following MA helpdesk questions:"
+                input_text = data["prompt"]
+                output_text = data["completion"]
+                text = PROMPT_FORMAT.format(instruction=instruction,input_text=input_text,output_text=output_text)
+
+                yield{
+                    "instruction": instruction,
+                    "input": input_text, 
+                    "output": output_text,
+                    "text": text
+                }
+    dataset = Dataset.from_generator(gen)
+    return dataset
+
 
 
 class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
@@ -83,7 +125,8 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
 
 def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, split: str = "train") -> Dataset:
     logger.info(f"Loading {training_data_id} dataset")
-    dataset: Dataset = load_dataset(training_data_id)[split]
+    # dataset: Dataset = load_dataset(training_data_id)[split]
+    dataset: Dataset = create_data_set_from_json_list()
     logger.info("Found %d rows", dataset.num_rows)
 
     # Remove empty responses
@@ -249,6 +292,7 @@ def train(
 @click.option("--lr", type=float, default=1e-5, help="Learning rate to use for training.")
 @click.option("--seed", type=int, default=DEFAULT_SEED, help="Seed to use for training.")
 @click.option("--deepspeed", type=str, default=None, help="Path to deepspeed config file.")
+@click.option("--test-size", type=int, default=1000, help="Path to deepspeed config file.")
 @click.option(
     "--gradient-checkpointing/--no-gradient-checkpointing",
     is_flag=True,

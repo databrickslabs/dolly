@@ -8,4 +8,5 @@ deepspeed \
      --local-output-dir /home/bo_ling/dolly_training \
      --per-device-train-batch-size 2 \
      --per-device-eval-batch-size 2 \
+     --test-size 100 \
      --lr 1e-5
