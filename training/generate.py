@@ -2,6 +2,7 @@ import logging
 from typing import Tuple
 
 import numpy as np
+import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -27,7 +28,7 @@ def load_model_tokenizer_for_generate(
     """
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, padding_side="left")
     model = AutoModelForCausalLM.from_pretrained(
-        pretrained_model_name_or_path, device_map="auto", trust_remote_code=True
+        pretrained_model_name_or_path, device_map="auto", torch_dtype=torch.bfloat16, trust_remote_code=True
     )
     return model, tokenizer
 

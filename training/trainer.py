@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 import click
 import numpy as np
+import torch
 from datasets import Dataset, load_dataset
 from transformers import (
     AutoModelForCausalLM,
@@ -112,7 +113,8 @@ def load_model(
 ) -> AutoModelForCausalLM:
     logger.info(f"Loading model for {pretrained_model_name_or_path}")
     model = AutoModelForCausalLM.from_pretrained(
-        pretrained_model_name_or_path, trust_remote_code=True, use_cache=False if gradient_checkpointing else True
+        pretrained_model_name_or_path, trust_remote_code=True, torch_dtype=torch.bfloat16,
+        use_cache=False if gradient_checkpointing else True
     )
     return model
 

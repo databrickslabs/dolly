@@ -31,6 +31,7 @@ First, load the model and tokenizer:
 
 ```
 import numpy as np
+import torch
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -39,7 +40,7 @@ from transformers import (
 )
 
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v1-6b", padding_side="left")
-model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v1-6b", device_map="auto", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v1-6b", device_map="auto", torch_dtype=torch.bfloat16, trust_remote_code=True)
 ```
 
 Next, try generating a response:
