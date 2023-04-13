@@ -12,6 +12,7 @@ Supported Tasks:
 - Data Augmentation
 
 Languages: English
+
 Version: 1.0
 
 **Owner: Databricks, Inc.**
