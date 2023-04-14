@@ -178,7 +178,7 @@ def train(
     # model is used.  The default model uses n_positions.  If no config settings can be found just default
     # to 1024 as this is probably supported by most models.
     conf = model.config
-    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_lenth", 1024))
+    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_length", 1024))
 
     processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
 
