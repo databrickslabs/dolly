@@ -14,6 +14,7 @@
 
 import logging
 from functools import partial
+from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 import click
@@ -32,13 +33,16 @@ from transformers import (
 from .consts import (
     DEFAULT_INPUT_MODEL,
     DEFAULT_SEED,
-    DEFAULT_TRAINING_DATASET,
+    PROMPT_WITH_INPUT_FORMAT,
+    PROMPT_NO_INPUT_FORMAT,
     END_KEY,
     INSTRUCTION_KEY,
     RESPONSE_KEY_NL,
 )
 
 logger = logging.getLogger(__name__)
+ROOT_PATH = Path(__file__).parent.parent
+DATABRICKS_DOLLY_15K_PATH = ROOT_PATH / "data" / "databricks-dolly-15k.jsonl"
 
 
 class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
@@ -81,20 +85,34 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
     )
 
 
-def load_training_dataset(training_data_id: str = DEFAULT_TRAINING_DATASET, split: str = "train") -> Dataset:
-    logger.info(f"Loading {training_data_id} dataset")
-    dataset: Dataset = load_dataset(training_data_id)[split]
+def load_training_dataset() -> Dataset:
+    logger.info(f"Loading dataset from {DATABRICKS_DOLLY_15K_PATH}")
+    dataset = load_dataset("json", data_files=str(DATABRICKS_DOLLY_15K_PATH))["train"]
     logger.info("Found %d rows", dataset.num_rows)
 
-    # Remove empty responses
-    response_key_stripped = RESPONSE_KEY_NL.strip()
-    dataset = dataset.filter(lambda rec: not rec["text"].strip().endswith(response_key_stripped))
+    def _add_text(rec):
+        instruction = rec["instruction"]
+        response = rec["response"]
+        context = rec.get("context")
 
-    def _func(rec):
-        rec["text"] += f"\n\n{END_KEY}"
+        if not instruction:
+            raise ValueError(f"Expected an instruction in: {rec}")
+
+        if not response:
+            raise ValueError(f"Expected a response in: {rec}")
+
+        # For some instructions there is an input that goes along with the instruction, providing context for the
+        # instruction.  For example, the input might be a passage from Wikipedia and the instruction says to extract
+        # some piece of information from it.  The response is that information to extract.  In other cases there is
+        # no input.  For example, the instruction might be open QA such as asking what year some historic figure was
+        # born.
+        if context:
+            rec["text"] = PROMPT_WITH_INPUT_FORMAT.format(instruction=instruction, response=response, input=context)
+        else:
+            rec["text"] = PROMPT_NO_INPUT_FORMAT.format(instruction=instruction, response=response)
         return rec
 
-    dataset = dataset.map(_func)
+    dataset = dataset.map(_add_text)
 
     return dataset
 
@@ -145,8 +163,13 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_S
     dataset = dataset.map(
         _preprocessing_function,
         batched=True,
-        remove_columns=["instruction", "input", "output", "text"],
+        remove_columns=["instruction", "context", "response", "text", "category"],
     )
+
+    # Make sure we don't have any truncated records, as this would mean the end keyword is missing.
+    logger.info("Processed dataset has %d rows", dataset.num_rows)
+    dataset = dataset.filter(lambda rec: len(rec["input_ids"]) < max_length)
+    logger.info("Processed dataset has %d rows after filtering for truncated records", dataset.num_rows)
 
     logger.info("Shuffling dataset")
     dataset = dataset.shuffle(seed=seed)
@@ -157,32 +180,52 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_S
 
 
 def train(
-    local_output_dir,
-    dbfs_output_dir,
-    epochs,
-    per_device_train_batch_size,
-    per_device_eval_batch_size,
-    lr,
-    seed,
-    deepspeed,
-    gradient_checkpointing,
-    local_rank,
-    bf16,
-    test_size=1000,
+    *,
+    input_model: str,
+    local_output_dir: str,
+    dbfs_output_dir: str,
+    epochs: int,
+    per_device_train_batch_size: int,
+    per_device_eval_batch_size: int,
+    lr: float,
+    seed: int,
+    deepspeed: str,
+    gradient_checkpointing: bool,
+    local_rank: str,
+    bf16: bool,
+    logging_steps: int,
+    save_steps: int,
+    eval_steps: int,
+    test_size: Union[float, int],
+    save_total_limit: int,
+    warmup_steps: int,
 ):
     set_seed(seed)
 
-    model, tokenizer = get_model_tokenizer(gradient_checkpointing=gradient_checkpointing)
+    model, tokenizer = get_model_tokenizer(
+        pretrained_model_name_or_path=input_model, gradient_checkpointing=gradient_checkpointing
+    )
 
-    # Use the same max length that the model supports.  Try a couple different keys in case a different
-    # model is used.  The default model uses n_positions.  If no config settings can be found just default
-    # to 1024 as this is probably supported by most models.
+    # Use the same max length that the model supports.  Fall back to 1024 if the setting can't be found.
+    # The configuraton for the length can be stored under different names depending on the model.  Here we attempt
+    # a few possible names we've encountered.
     conf = model.config
-    max_length: int = getattr(conf, "n_positions", getattr(conf, "seq_length", 1024))
+    max_length = None
+    for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
+        max_length = getattr(model.config, length_setting, None)
+        if max_length:
+            logger.info(f"Found max lenth: {max_length}")
+            break
+    if not max_length:
+        max_length = 1024
+        logger.info(f"Using default max length: {max_length}")
 
     processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
 
     split_dataset = processed_dataset.train_test_split(test_size=test_size, seed=seed)
+
+    logger.info("Train data size: %d", split_dataset["train"].num_rows)
+    logger.info("Test data size: %d", split_dataset["test"].num_rows)
 
     data_collator = DataCollatorForCompletionOnlyLM(
         tokenizer=tokenizer, mlm=False, return_tensors="pt", pad_to_multiple_of=8
@@ -203,17 +246,18 @@ def train(
         gradient_checkpointing=gradient_checkpointing,
         logging_dir=f"{local_output_dir}/runs",
         logging_strategy="steps",
-        logging_steps=10,
+        logging_steps=logging_steps,
         evaluation_strategy="steps",
-        eval_steps=100,
+        eval_steps=eval_steps,
         save_strategy="steps",
-        save_steps=200,
-        save_total_limit=1,
-        load_best_model_at_end=True,
+        save_steps=save_steps,
+        save_total_limit=save_total_limit,
+        load_best_model_at_end=False,
         report_to="tensorboard",
         disable_tqdm=True,
         remove_unused_columns=False,
         local_rank=local_rank,
+        warmup_steps=warmup_steps,
     )
 
     logger.info("Instantiating Trainer")
@@ -241,11 +285,20 @@ def train(
 
 
 @click.command()
+@click.option("--input-model", type=str, help="Input model to fine tune", default=DEFAULT_INPUT_MODEL)
 @click.option("--local-output-dir", type=str, help="Write directly to this local path", required=True)
 @click.option("--dbfs-output-dir", type=str, help="Sync data to this path on DBFS")
 @click.option("--epochs", type=int, default=3, help="Number of epochs to train for.")
 @click.option("--per-device-train-batch-size", type=int, default=8, help="Batch size to use for training.")
 @click.option("--per-device-eval-batch-size", type=int, default=8, help="Batch size to use for evaluation.")
+@click.option(
+    "--test-size", type=int, default=1000, help="Number of test records for evaluation, or ratio of test records."
+)
+@click.option("--warmup-steps", type=int, default=None, help="Number of steps to warm up to learning rate")
+@click.option("--logging-steps", type=int, default=10, help="How often to log")
+@click.option("--eval-steps", type=int, default=50, help="How often to run evaluation on test records")
+@click.option("--save-steps", type=int, default=400, help="How often to checkpoint the model")
+@click.option("--save-total-limit", type=int, default=10, help="Maximum number of checkpoints to keep on disk")
 @click.option("--lr", type=float, default=1e-5, help="Learning rate to use for training.")
 @click.option("--seed", type=int, default=DEFAULT_SEED, help="Seed to use for training.")
 @click.option("--deepspeed", type=str, default=None, help="Path to deepspeed config file.")

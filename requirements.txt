@@ -3,4 +3,4 @@ click==8.0.3
 datasets==2.8.0
 deepspeed==0.8.0
 transformers[torch]==4.25.1
-watchdog==2.1.9
+langchain>=0.0.139
