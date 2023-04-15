@@ -2,8 +2,11 @@
 # MAGIC %md
 # MAGIC ## Train Dolly
 # MAGIC
-# MAGIC This fine-tunes the [GPT-J 6B](https://huggingface.co/EleutherAI/gpt-j-6B) model on
-# MAGIC the [Alpaca](https://huggingface.co/datasets/tatsu-lab/alpaca) dataset.
+# MAGIC This fine-tunes EleutherAI Pythia models
+# MAGIC (e.g. [pythia-2.8b](https://huggingface.co/EleutherAI/pythia-6.9b),
+# MAGIC [pythia-6.9b](https://huggingface.co/EleutherAI/pythia-6.9b), or
+# MAGIC [pythia-12b](https://huggingface.co/EleutherAI/pythia-12b)) on
+# MAGIC the [databricks-dolly-15k](https://github.com/databrickslabs/dolly/tree/master/data) dataset.
 # MAGIC
 # MAGIC ```
 # MAGIC   Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +22,10 @@
 # MAGIC   limitations under the License.
 # MAGIC ```
 # MAGIC
-# MAGIC Please note that while GPT-J 6B is [Apache 2.0 licensed](https://huggingface.co/EleutherAI/gpt-j-6B),
-# MAGIC the Alpaca dataset is licensed under [Creative Commons NonCommercial (CC BY-NC 4.0)](https://huggingface.co/datasets/tatsu-lab/alpaca).
+# MAGIC The EleutherAI Pythia models are [Apache 2.0 licensed](https://huggingface.co/EleutherAI/gpt-j-6B) and
+# MAGIC the [databricks-dolly-15k](https://github.com/databrickslabs/dolly/tree/master/data) is licensed under the terms
+# MAGIC of [Creative Commons Attribution-ShareAlike 3.0 Unported License](https://creativecommons.org/licenses/by-sa/3.0/legalcode),
+# MAGIC which means it can be used for either academic or commercial purposes.
 
 # COMMAND ----------
 
@@ -55,12 +60,16 @@ logging.getLogger("sh.command").setLevel(logging.ERROR)
 # COMMAND ----------
 
 import os
+import re
 from datetime import datetime
+from training.consts import DEFAULT_INPUT_MODEL, SUGGESTED_INPUT_MODELS
 from training.trainer import load_training_dataset, load_tokenizer
 
+dbutils.widgets.combobox("input_model", DEFAULT_INPUT_MODEL, SUGGESTED_INPUT_MODELS, "input_model")
 dbutils.widgets.text("num_gpus", "", "num_gpus")
 dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
+dbutils.widgets.text("experiment_id", "", "experiment_id")
 
 # COMMAND ----------
 
@@ -72,6 +81,14 @@ load_tokenizer()
 
 timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 model_name = "dolly"
+
+experiment_id = dbutils.widgets.get("experiment_id")
+input_model = dbutils.widgets.get("input_model")
+
+if experiment_id:
+    experiment_id = re.sub(r"\s+", "_", experiment_id.strip())
+    model_name = f"{model_name}__{experiment_id}"
+
 checkpoint_dir_name = f"{model_name}__{timestamp}"
 
 root_path = os.getcwd()
@@ -122,13 +139,20 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # MAGIC !deepspeed {num_gpus_flag} \
 # MAGIC     --module training.trainer \
+# MAGIC     --input-model {input_model} \
 # MAGIC     --deepspeed {deepspeed_config} \
-# MAGIC     --epochs 1 \
+# MAGIC     --epochs 2 \
 # MAGIC     --local-output-dir {local_output_dir} \
 # MAGIC     --dbfs-output-dir {dbfs_output_dir} \
-# MAGIC     --per-device-train-batch-size 8 \
-# MAGIC     --per-device-eval-batch-size 8 \
-# MAGIC     --lr 1e-5
+# MAGIC     --per-device-train-batch-size 6 \
+# MAGIC     --per-device-eval-batch-size 6 \
+# MAGIC     --logging-steps 10 \
+# MAGIC     --save-steps 200 \
+# MAGIC     --save-total-limit 20 \
+# MAGIC     --eval-steps 50 \
+# MAGIC     --warmup-steps 50 \
+# MAGIC     --test-size 200 \
+# MAGIC     --lr 5e-6
 
 # COMMAND ----------
 
