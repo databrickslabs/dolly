@@ -49,6 +49,8 @@ maximize the potential of all individuals and organizations.
 
 ## Getting Started with Response Generation
 
+Windows installation and usage tutorial with Gradio interface and 8bit load: [YouTube link](https://www.youtube.com/watch?v=ku6UvK1bsp4)
+
 If you'd like to simply test the model without training, the model is available on Hugging Face as [databricks/dolly-v2-12b](https://huggingface.co/databricks/dolly-v2-12b).
 
 To use the model with the `transformers` library on a machine with GPUs:
