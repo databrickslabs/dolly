@@ -51,14 +51,14 @@ def get_special_token_id(tokenizer: PreTrainedTokenizer, key: str) -> int:
         key (str): the key to convert to a single token
 
     Raises:
-        RuntimeError: if more than one ID was generated
+        ValueError: if more than one ID was generated
 
     Returns:
         int: the token ID for the given key
     """
     token_ids = tokenizer.encode(key)
     if len(token_ids) > 1:
-        raise RuntimeError(f"Expected only a single token for '{key}' but found {token_ids}")
+        raise ValueError(f"Expected only a single token for '{key}' but found {token_ids}")
     return token_ids[0]
 
 
