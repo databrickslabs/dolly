@@ -1,6 +1,7 @@
 .dbx/
 venv/
 .venv/
+.idea/
 .python-version
 __pycache__/
 htmlcov/
