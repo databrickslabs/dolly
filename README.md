@@ -76,20 +76,21 @@ instruct_pipeline = pipeline(model="databricks/dolly-v2-12b", torch_dtype=torch.
 
 ## Getting Started with Training
 
-The following instructions refer to Dolly v1 and still need to be updated for v2 training.
-
 * Add the `dolly` repo to Databricks (under Repos click Add Repo, enter `https://github.com/databrickslabs/dolly.git`, then click Create Repo).
 * Start a `12.2 LTS ML (includes Apache Spark 3.3.2, GPU, Scala 2.12)` single-node cluster with node type having 8 A100 GPUs (e.g. `Standard_ND96asr_v4` or `p4d.24xlarge`). Note that these instance types may not be available in all regions, or may be difficult to provision. In Databricks, note that you must select the GPU runtime first, and unselect "Use Photon", for these instance types to appear (where supported).
 * Open the `train_dolly` notebook in the Repo (which is the `train_dolly.py` file in the Github `dolly` repo), attach to your GPU cluster, and run all cells.  When training finishes, the notebook will save the model under `/dbfs/dolly_training`.
 
 ## Training on Other Instances
 
-A100 instance types are not available in all cloud regions, or can be hard to provision. Training is possible on other GPU instance types, with small modifications to reduce memory usage.
-Training will take longer on these instances. These modifications are not necessarily optimal, but are simple to make.
+A100 instance types are not available in all cloud regions, or can be hard to provision. Training is possible on other GPU instance types, 
+for smaller Dolly model sizes, and with small modifications to reduce memory usage.
+These modifications are not optimal, but are simple to make.
 
 ### A10 GPUs
 
-To run on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_v5`, 2 x A10), make the following changes:
+Training the 12B param model is not recommended on A10s.
+
+To train the 6.9B param model on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_v5`, 2 x A10), make the following changes:
 
 - Modify the deepspeed config file `ds_z3_bf16_config.json` to configure optimizer offload. Within the `"zero_optimization"` section, add:
   ```
@@ -100,23 +101,21 @@ To run on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_
   ```
 - Set the `num_gpus` widget in `train_dolly` to the number of GPUs in your instance, such as 2 or 4, before running
 
-With 4 A10s, an epoch completes in about 7 hours.
+To train the 2.8B param model:
+
+- Instead, simply set `per-device-train-batch-size` and `per-device-eval-batch-size` to 2 in the `train_dolly.py` invocation of `deepspeed`
 
 ### V100 GPUs
 
-To run on V100 instances with 32GB of GPU memory (ex: `p3dn.24xlarge` or `Standard_ND40rs_v2`), make the following changes:
+To run on V100 instances with 32GB of GPU memory (ex: `p3dn.24xlarge` or `Standard_ND40rs_v2`), follow instructions above, and add:
 
-- Modify the deepspeed config to enable optimizer offload, as above
-- Modify `trainer.py` to disable `bf16` and enable `fp16` in `TrainingArguments`:
+- Modify `training/trainer.py` to disable `bf16` and enable `fp16` in `TrainingArguments`:
   ```
   ...
   fp16=True,
   bf16=False,
   ...
   ```
-- Set the `num_gpus` widget in `train_dolly` to the number of GPUs in your instance, typically 8
-
-With 8 V100s, an epoch completes in about 3.5 hours. Note that the resulting model may be slightly different when trained with `fp16` versus `bf16`.
 
 ## Running Unit Tests Locally
 
