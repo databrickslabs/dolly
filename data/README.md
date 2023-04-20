@@ -13,7 +13,10 @@ Supported Tasks:
 
 Languages: English
 
-Version: 1.0
+Machine translation (by [Maxim Gerasimov](https://github.com/Lednik7)):
+Russian, Kazakh, Spanish, Italian, French (parallel corpus)
+
+Version: 1.1
 
 **Owner: Databricks, Inc.**
 
