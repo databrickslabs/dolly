@@ -3,7 +3,7 @@
 # MAGIC ## Train Dolly
 # MAGIC
 # MAGIC This fine-tunes EleutherAI Pythia models
-# MAGIC (e.g. [pythia-2.8b](https://huggingface.co/EleutherAI/pythia-6.9b),
+# MAGIC (e.g. [pythia-2.8b](https://huggingface.co/EleutherAI/pythia-2.8b),
 # MAGIC [pythia-6.9b](https://huggingface.co/EleutherAI/pythia-6.9b), or
 # MAGIC [pythia-12b](https://huggingface.co/EleutherAI/pythia-12b)) on
 # MAGIC the [databricks-dolly-15k](https://github.com/databrickslabs/dolly/tree/master/data) dataset.
