@@ -1,15 +1,13 @@
 # Dolly
 
 Databricks’ [Dolly](https://huggingface.co/databricks/dolly-v2-12b) is an instruction-following large language model trained on the Databricks machine learning platform
-that is licensed for commercial use. Based on `pythia-12b`, Dolly is trained on ~15k instruction/response fine tuning records
+that is licensed for commercial use. The model is available on Hugging Face as [databricks/dolly-v2-12b](https://huggingface.co/databricks/dolly-v2-12b). Based on `pythia-12b`, Dolly is trained on ~15k instruction/response fine tuning records
 [`databricks-dolly-15k`](https://github.com/databrickslabs/dolly/tree/master/data) generated
 by Databricks employees in capability domains from the InstructGPT paper, including brainstorming, classification, closed QA, generation,
 information extraction, open QA and summarization. `dolly-v2-12b` is not a state-of-the-art model, but does exhibit surprisingly
 high quality instruction following behavior not characteristic of the foundation model on which it is based.
 
 Databricks is committed to ensuring that every organization and individual benefits from the transformative power of artificial intelligence. The Dolly model family represents our first steps along this journey, and we’re excited to share this technology with the world.
-
-The model is available on Hugging Face as [databricks/dolly-v2-12b](https://huggingface.co/databricks/dolly-v2-12b).
 
 ## Model Overview
 
@@ -39,13 +37,17 @@ associations.
 
 - **`databricks-dolly-15k`**: The training data on which `dolly-v2-12b` is instruction tuned represents natural language instructions generated
 by Databricks employees during a period spanning March and April 2023 and includes passages from Wikipedia as references passages
-for instruction categories like closed QA and summarization. To our knowledge it does not contain obscenity, intellectual property or
+for instruction categories like closed QA and summarization. 
+
+Databricks is committed to ongoing research and development efforts to develop helpful, honest and harmless AI technologies that
+maximize the potential of all individuals and organizations.
+
+To our knowledge it does not contain obscenity, intellectual property or
 personally identifying information about non-public figures, but it may contain typos and factual errors.
 The dataset may also reflect biases found in Wikipedia. Finally, the dataset likely reflects
 the interests and semantic choices of Databricks employees, a demographic which is not representative of the global population at large.
 
-Databricks is committed to ongoing research and development efforts to develop helpful, honest and harmless AI technologies that
-maximize the potential of all individuals and organizations.
+
 
 ## Getting Started with Response Generation
 
