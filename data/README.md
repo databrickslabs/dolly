@@ -61,6 +61,9 @@ This dataset contains public information (e.g., some information from Wikipedia)
 ## Language
 American English
 
+**Machine translation** (by [Maxim Gerasimov](https://github.com/Lednik7)):
+Russian(ru), Kazakh(kk), Spanish(es), Italian(it), French(fr)
+
 # Known Limitations
 - Wikipedia is a crowdsourced corpus and the contents of this dataset may reflect the bias, factual errors and topical focus found in Wikipedia
 - Some annotators may not be native English speakers
