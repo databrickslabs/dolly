@@ -42,7 +42,7 @@ from .consts import (
 
 logger = logging.getLogger(__name__)
 ROOT_PATH = Path(__file__).parent.parent
-DATABRICKS_DOLLY_15K_PATH = ROOT_PATH / "data" / "databricks-dolly-15k.jsonl"
+DATABRICKS_DOLLY_15K_PATH = ROOT_PATH / "data" / "translated-datasets" / "databricks-dolly-15k-ru.jsonl"
 
 
 class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
