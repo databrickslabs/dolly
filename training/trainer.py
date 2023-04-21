@@ -42,7 +42,6 @@ from .consts import (
 
 logger = logging.getLogger(__name__)
 ROOT_PATH = Path(__file__).parent.parent
-DATABRICKS_DOLLY_15K_PATH = ROOT_PATH / "data" / "databricks-dolly-15k.jsonl"
 
 
 class DataCollatorForCompletionOnlyLM(DataCollatorForLanguageModeling):
@@ -85,9 +84,9 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
     )
 
 
-def load_training_dataset() -> Dataset:
-    logger.info(f"Loading dataset from {DATABRICKS_DOLLY_15K_PATH}")
-    dataset = load_dataset("json", data_files=str(DATABRICKS_DOLLY_15K_PATH))["train"]
+def load_training_dataset(path_or_dataset: str = "databricks/databricks-dolly-15k") -> Dataset:
+    logger.info(f"Loading dataset from {path_or_dataset}")
+    dataset = load_dataset(path_or_dataset)["train"]
     logger.info("Found %d rows", dataset.num_rows)
 
     def _add_text(rec):

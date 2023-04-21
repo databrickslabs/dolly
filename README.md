@@ -2,7 +2,7 @@
 
 Databricks’ [Dolly](https://huggingface.co/databricks/dolly-v2-12b) is an instruction-following large language model trained on the Databricks machine learning platform
 that is licensed for commercial use. Based on `pythia-12b`, Dolly is trained on ~15k instruction/response fine tuning records
-[`databricks-dolly-15k`](https://github.com/databrickslabs/dolly/tree/master/data) generated
+[`databricks-dolly-15k`](https://huggingface.co/datasets/databricks/databricks-dolly-15k) generated
 by Databricks employees in capability domains from the InstructGPT paper, including brainstorming, classification, closed QA, generation,
 information extraction, open QA and summarization. `dolly-v2-12b` is not a state-of-the-art model, but does exhibit surprisingly
 high quality instruction following behavior not characteristic of the foundation model on which it is based.
