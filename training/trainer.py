@@ -210,16 +210,18 @@ def train(
     # The configuraton for the length can be stored under different names depending on the model.  Here we attempt
     # a few possible names we've encountered.
     conf = model.config
-    max_length = None
-    for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
-        max_length = getattr(model.config, length_setting, None)
-        if max_length:
-            logger.info(f"Found max lenth: {max_length}")
-            break
-    if not max_length:
-        max_length = 1024
-        logger.info(f"Using default max length: {max_length}")
+#     max_length = None
+#     for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
+#         max_length = getattr(model.config, length_setting, None)
+#         if max_length:
+#             logger.info(f"Found max lenth: {max_length}")
+#             break
+#     if not max_length:
+#         max_length = 1024
+#         logger.info(f"Using default max length: {max_length}")
 
+    max_length = 256
+    
     processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
 
     split_dataset = processed_dataset.train_test_split(test_size=test_size, seed=seed)
@@ -238,8 +240,8 @@ def train(
         output_dir=local_output_dir,
         per_device_train_batch_size=per_device_train_batch_size,
         per_device_eval_batch_size=per_device_eval_batch_size,
-        fp16=True,
-        bf16=False,
+        fp16=False,
+        bf16=True,
         learning_rate=lr,
         num_train_epochs=epochs,
         deepspeed=deepspeed,
