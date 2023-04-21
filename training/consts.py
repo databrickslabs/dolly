@@ -4,6 +4,7 @@ SUGGESTED_INPUT_MODELS = [
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
     "EleutherAI/gpt-j-6B",
+    "EleutherAI/gpt-neo-1.3B"
 ]
 INTRO_BLURB = (
     "Below is an instruction that describes a task. Write a response that appropriately completes the request."
