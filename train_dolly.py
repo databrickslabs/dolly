@@ -100,6 +100,7 @@ load_tokenizer()
 
 # COMMAND ----------
 
+from datetime import datetime
 timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 model_name = "dolly"
 
