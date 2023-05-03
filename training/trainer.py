@@ -38,6 +38,7 @@ from .consts import (
     END_KEY,
     INSTRUCTION_KEY,
     RESPONSE_KEY_NL,
+    DEFAULT_TRAINING_DATASET,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,7 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
     )
 
 
-def load_training_dataset(path_or_dataset: str = "databricks/databricks-dolly-15k") -> Dataset:
+def load_training_dataset(path_or_dataset: str = DEFAULT_TRAINING_DATASET) -> Dataset:
     logger.info(f"Loading dataset from {path_or_dataset}")
     dataset = load_dataset(path_or_dataset)["train"]
     logger.info("Found %d rows", dataset.num_rows)
@@ -144,7 +145,7 @@ def get_model_tokenizer(
     return model, tokenizer
 
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_SEED) -> Dataset:
+def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_SEED, training_dataset: str = DEFAULT_TRAINING_DATASET) -> Dataset:
     """Loads the training dataset and tokenizes it so it is ready for training.
 
     Args:
@@ -155,7 +156,7 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed=DEFAULT_S
         Dataset: HuggingFace dataset
     """
 
-    dataset = load_training_dataset()
+    dataset = load_training_dataset(training_dataset)
 
     logger.info("Preprocessing dataset")
     _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
@@ -198,6 +199,7 @@ def train(
     test_size: Union[float, int],
     save_total_limit: int,
     warmup_steps: int,
+    training_dataset: str = DEFAULT_TRAINING_DATASET,
 ):
     set_seed(seed)
 
@@ -219,7 +221,7 @@ def train(
         max_length = 1024
         logger.info(f"Using default max length: {max_length}")
 
-    processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed)
+    processed_dataset = preprocess_dataset(tokenizer=tokenizer, max_length=max_length, seed=seed, training_dataset=training_dataset)
 
     split_dataset = processed_dataset.train_test_split(test_size=test_size, seed=seed)
 
@@ -301,6 +303,7 @@ def train(
 @click.option("--lr", type=float, default=1e-5, help="Learning rate to use for training.")
 @click.option("--seed", type=int, default=DEFAULT_SEED, help="Seed to use for training.")
 @click.option("--deepspeed", type=str, default=None, help="Path to deepspeed config file.")
+@click.option("--training-dataset", type=str, default=DEFAULT_TRAINING_DATASET, help="Path to dataset for training")
 @click.option(
     "--gradient-checkpointing/--no-gradient-checkpointing",
     is_flag=True,
