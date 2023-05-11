@@ -17,25 +17,68 @@
 
 # MAGIC %load_ext autoreload
 # MAGIC %autoreload 2
-
-default_model = "databricks/dolly-v2-3b"
-
-suggested_models = [
-    "databricks/dolly-v1-6b",
-    "databricks/dolly-v2-3b",
-    "databricks/dolly-v2-7b",
-    "databricks/dolly-v2-12b",
-]
-
-dbutils.widgets.combobox("input_model", default_model, suggested_models, "input_model")
+# MAGIC
+# MAGIC default_model = "databricks/dolly-v2-12b"
+# MAGIC
+# MAGIC suggested_models = [
+# MAGIC     "databricks/dolly-v1-6b",
+# MAGIC     "databricks/dolly-v2-3b",
+# MAGIC     "databricks/dolly-v2-7b",
+# MAGIC     "databricks/dolly-v2-12b",
+# MAGIC ]
+# MAGIC
+# MAGIC dbutils.widgets.combobox("input_model", default_model, suggested_models, "input_model")
 
 # COMMAND ----------
 
-from training.generate import generate_response, load_model_tokenizer_for_generate
+import logging
+import re
+from typing import List, Tuple
+import torch
 
-input_model = dbutils.widgets.get("input_model")
+import numpy as np
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    Pipeline,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+)
 
-model, tokenizer = load_model_tokenizer_for_generate(input_model)
+from transformers.utils import is_tf_available
+
+if is_tf_available():
+    import tensorflow as tf
+
+
+
+    
+
+def load_model_tokenizer_for_generate_denson(
+    pretrained_model_name_or_path: str,
+) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
+    """Loads the model and tokenizer so that it can be used for generating responses.
+    Args:
+        pretrained_model_name_or_path (str): name or path for model
+    Returns:
+        Tuple[PreTrainedModel, PreTrainedTokenizer]: model and tokenizer
+    """
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, padding_side="left")
+    model = AutoModelForCausalLM.from_pretrained(
+        pretrained_model_name_or_path, device_map="auto", torch_dtype=torch.bfloat16, trust_remote_code=True,
+        load_in_8bit=True
+    )
+    return model, tokenizer
+
+# COMMAND ----------
+
+from training.generate import InstructionTextGenerationPipeline, load_model_tokenizer_for_generate
+
+# input_model = dbutils.widgets.get("input_model")
+
+input_model = "databricks/dolly-v2-12b"
+
+model, tokenizer = load_model_tokenizer_for_generate_denson(input_model)
 
 # COMMAND ----------
 
