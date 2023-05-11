@@ -25,6 +25,11 @@ def snowflake_connection(user_role = 'BA_CUSTOMERSUCCESS'):
 
 
 
+    
+
+
+
+
 
 
 
