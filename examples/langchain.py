@@ -46,6 +46,15 @@ dbutils.widgets.combobox("input_model", default_model, suggested_models, "input_
 
 # COMMAND ----------
 
+from import_all import *
+from snowflake_connection import *
+
+# COMMAND ----------
+
+ctx = snowflake_connection(user_role = 'USERDEFINED_CUSTOMERSUCCESS_OWNER') 
+
+# COMMAND ----------
+
 
 import logging
 import re

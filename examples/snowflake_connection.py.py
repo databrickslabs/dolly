@@ -11,7 +11,7 @@
 # coding: utf-8
 
 # Import packages
-from all_import import *
+from import_all import *
 
 
 def snowflake_connection(user_role = 'BA_CUSTOMERSUCCESS'):
