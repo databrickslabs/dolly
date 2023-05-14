@@ -83,7 +83,7 @@ logging.getLogger("sh.command").setLevel(logging.ERROR)
 import os
 import re
 from datetime import datetime
-from training.consts import DEFAULT_INPUT_MODEL, SUGGESTED_INPUT_MODELS
+from training.consts import DEFAULT_INPUT_MODEL, SUGGESTED_INPUT_MODELS, DEFAULT_TRAINING_DATASET
 from training.trainer import load_training_dataset, load_tokenizer
 
 dbutils.widgets.combobox("input_model", DEFAULT_INPUT_MODEL, SUGGESTED_INPUT_MODELS, "input_model")
@@ -92,10 +92,23 @@ dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 dbutils.widgets.text("experiment_id", "", "experiment_id")
 
+dbutils.widgets.dropdown("training_dataset", DEFAULT_TRAINING_DATASET, [DEFAULT_TRAINING_DATASET, "local_file"])
+if dbutils.widgets.get("training_dataset") == "local_file":
+  # Train with the local file. 
+  dbutils.widgets.text("local_file_name", "", "local_file_name")
+  dbutils.widgets.dropdown("local_file_type", "JSON", ["JSON", "CSV", "Parquet"])
+else:
+  try:
+    dbutils.widgets.remove("local_file_name")
+    dbutils.widgets.remove("local_file_type")
+  except:
+    pass
+
 # COMMAND ----------
 
 # Cache data and tokenizer locally before creating a bunch of deepspeed processes and make sure they succeeds.
-load_training_dataset()
+training_dataset = dbutils.widgets.get("training_dataset")
+load_training_dataset(training_dataset, dbutils.widgets.get("local_file_type") if training_dataset != DEFAULT_TRAINING_DATASET else None)
 load_tokenizer()
 
 # COMMAND ----------
@@ -158,22 +171,22 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # COMMAND ----------
 
-# MAGIC !deepspeed {num_gpus_flag} \
-# MAGIC     --module training.trainer \
-# MAGIC     --input-model {input_model} \
-# MAGIC     --deepspeed {deepspeed_config} \
-# MAGIC     --epochs 2 \
-# MAGIC     --local-output-dir {local_output_dir} \
-# MAGIC     --dbfs-output-dir {dbfs_output_dir} \
-# MAGIC     --per-device-train-batch-size 6 \
-# MAGIC     --per-device-eval-batch-size 6 \
-# MAGIC     --logging-steps 10 \
-# MAGIC     --save-steps 200 \
-# MAGIC     --save-total-limit 20 \
-# MAGIC     --eval-steps 50 \
-# MAGIC     --warmup-steps 50 \
-# MAGIC     --test-size 200 \
-# MAGIC     --lr 5e-6
+!deepspeed {num_gpus_flag} \
+    --module training.trainer \
+    --input-model {input_model} \
+    --deepspeed {deepspeed_config} \
+    --epochs 2 \
+    --local-output-dir {local_output_dir} \
+    --dbfs-output-dir {dbfs_output_dir} \
+    --per-device-train-batch-size 6 \
+    --per-device-eval-batch-size 6 \
+    --logging-steps 10 \
+    --save-steps 200 \
+    --save-total-limit 20 \
+    --eval-steps 50 \
+    --warmup-steps 50 \
+    --test-size 200 \
+    --lr 5e-6
 
 # COMMAND ----------
 

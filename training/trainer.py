@@ -85,9 +85,18 @@ def preprocess_batch(batch: Dict[str, List], tokenizer: AutoTokenizer, max_lengt
     )
 
 
-def load_training_dataset(path_or_dataset: str = DEFAULT_TRAINING_DATASET) -> Dataset:
-    logger.info(f"Loading dataset from {path_or_dataset}")
-    dataset = load_dataset(path_or_dataset)["train"]
+def load_training_dataset(path_or_dataset: str = DEFAULT_TRAINING_DATASET, file_type: str = None) -> Dataset:
+    dataset = None
+    if file_type:
+      # read local file from the data dir
+      file_path = ROOT_PATH / "data" / path_or_dataset
+      if not Path(file_path).exists():
+        raise RuntimeError(f"Could not find data file {path_or_dataset} in data dir.")
+      logger.info(f"Loading dataset from {file_path}")
+      dataset = load_dataset(file_type, data_files=str(file_path))["train"]
+    else:
+      logger.info(f"Loading dataset from {path_or_dataset}")
+      dataset = load_dataset(path_or_dataset)["train"]
     logger.info("Found %d rows", dataset.num_rows)
 
     def _add_text(rec):
