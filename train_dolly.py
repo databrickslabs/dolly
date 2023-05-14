@@ -108,7 +108,7 @@ else:
 
 # Cache data and tokenizer locally before creating a bunch of deepspeed processes and make sure they succeeds.
 training_dataset = dbutils.widgets.get("training_dataset")
-load_training_dataset(training_dataset, dbutils.widgets.get("local_file_type") if training_dataset != DEFAULT_TRAINING_DATASET else None)
+load_training_dataset(training_dataset, dbutils.widgets.get("local_file_name") if training_dataset != DEFAULT_TRAINING_DATASET else None)
 load_tokenizer()
 
 # COMMAND ----------
