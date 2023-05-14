@@ -95,7 +95,7 @@ dbutils.widgets.text("experiment_id", "", "experiment_id")
 dbutils.widgets.dropdown("training_dataset", DEFAULT_TRAINING_DATASET, [DEFAULT_TRAINING_DATASET, "local_file"])
 if dbutils.widgets.get("training_dataset") == "local_file":
   # Train with the local file. 
-  dbutils.widgets.text("local_file_name", "", "local_file_name")
+  dbutils.widgets.text("local_file_name", "[file name in data dir]", "local_file_name")
   dbutils.widgets.dropdown("local_file_type", "JSON", ["JSON", "CSV", "Parquet"])
 else:
   try:
@@ -108,7 +108,9 @@ else:
 
 # Cache data and tokenizer locally before creating a bunch of deepspeed processes and make sure they succeeds.
 training_dataset = dbutils.widgets.get("training_dataset")
-load_training_dataset(training_dataset, dbutils.widgets.get("local_file_name") if training_dataset != DEFAULT_TRAINING_DATASET else None)
+load_training_dataset(
+  dbutils.widgets.get("local_file_name") if training_dataset != DEFAULT_TRAINING_DATASET else DEFAULT_TRAINING_DATASET,
+  dbutils.widgets.get("local_file_type") if training_dataset != DEFAULT_TRAINING_DATASET else None)
 load_tokenizer()
 
 # COMMAND ----------
