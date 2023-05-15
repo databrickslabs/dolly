@@ -70,7 +70,7 @@ class InstructionTextGenerationPipeline(Pipeline):
 
         Args:
             do_sample (bool, optional): Whether or not to use sampling. Defaults to True.
-            max_new_tokens (int, optional): Max new tokens after the prompt to generate. Defaults to 128.
+            max_new_tokens (int, optional): Max new tokens after the prompt to generate. Defaults to 256.
             top_p (float, optional): If set to float < 1, only the smallest set of most probable tokens with
                 probabilities that add up to top_p or higher are kept for generation. Defaults to 0.92.
             top_k (int, optional): The number of highest probability vocabulary tokens to keep for top-k-filtering.
