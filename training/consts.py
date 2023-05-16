@@ -4,9 +4,9 @@ SUGGESTED_INPUT_MODELS = [
     "EleutherAI/pythia-6.9b",
     "EleutherAI/pythia-12b",
     "EleutherAI/gpt-j-6B",
-    "databricks/dolly-v2-3b"
+    "databricks/dolly-v2-3b",
     "databricks/dolly-v2-7b",
-    "databricks/dolly-v2-12b",
+    "databricks/dolly-v2-12b"
 ]
 DEFAULT_TRAINING_DATASET = "databricks/databricks-dolly-15k"
 INTRO_BLURB = (
