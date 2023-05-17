@@ -91,7 +91,7 @@ dbutils.widgets.text("num_gpus", "", "num_gpus")
 dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 dbutils.widgets.text("experiment_id", "", "experiment_id")
-dbutils.widgets.dropdown("gpu_family", "a100", ["a100", "a10", "v100"])
+dbutils.widgets.combobox("gpu_family", "a100", ["v100", "a10", "a100"])
 
 # COMMAND ----------
 
@@ -112,11 +112,6 @@ if experiment_id:
     model_name = f"{model_name}__{experiment_id}"
 
 checkpoint_dir_name = f"{model_name}__{timestamp}"
-
-# pick an appropriate config file
-gpu_family = dbutils.widgets.get("gpu_family")
-root_path = os.getcwd()
-deepspeed_config = os.path.join(root_path, f"config/{gpu_family}_config.json")
 
 dolly_training_dir_name = "dolly_training"
 
@@ -140,6 +135,17 @@ os.makedirs(dbfs_output_root, exist_ok=True)
 local_output_dir = os.path.join(local_training_root, checkpoint_dir_name)
 dbfs_output_dir = os.path.join(dbfs_output_root, checkpoint_dir_name)
 
+# pick an appropriate config file
+gpu_family = dbutils.widgets.get("gpu_family")
+root_path = os.getcwd()
+deepspeed_config = os.path.join(root_path, f"config/{gpu_family}_config.json")
+
+# configure the batch_size
+batch_size = 3
+if gpu_family == "a100":
+  batch_size = 6
+
+# configure num_gpus, if specified
 num_gpus_flag = ""
 num_gpus = dbutils.widgets.get("num_gpus")
 if num_gpus:
@@ -168,8 +174,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
     --epochs 2 \
     --local-output-dir {local_output_dir} \
     --dbfs-output-dir {dbfs_output_dir} \
-    --per-device-train-batch-size 6 \
-    --per-device-eval-batch-size 6 \
+    --per-device-train-batch-size {batch_size} \
+    --per-device-eval-batch-size {batch_size} \
     --logging-steps 10 \
     --save-steps 200 \
     --save-total-limit 20 \
