@@ -192,6 +192,7 @@ def train(
     deepspeed: str,
     gradient_checkpointing: bool,
     local_rank: str,
+    fp16: bool,
     bf16: bool,
     logging_steps: int,
     save_steps: int,
@@ -232,6 +233,8 @@ def train(
         tokenizer=tokenizer, mlm=False, return_tensors="pt", pad_to_multiple_of=8
     )
 
+    assert not(fp16 and bf16), "You cannot specify both fp16 and bf16 optimizations at the same time!"
+
     if not dbfs_output_dir:
         logger.warn("Will NOT save to DBFS")
 
@@ -239,7 +242,7 @@ def train(
         output_dir=local_output_dir,
         per_device_train_batch_size=per_device_train_batch_size,
         per_device_eval_batch_size=per_device_eval_batch_size,
-        fp16=False,
+        fp16=fp16,
         bf16=bf16,
         learning_rate=lr,
         num_train_epochs=epochs,
@@ -316,7 +319,8 @@ def train(
     default=True,
     help="Provided by deepspeed to identify which instance this process is when performing multi-GPU training.",
 )
-@click.option("--bf16", type=bool, default=True, help="Whether to use bf16 (preferred on A100's).")
+@click.option("--bf16", type=bool, default=None, help="Whether to use bf16 (preferred on A100's).")
+@click.option("--fp16", type=bool, default=None, help="Whether to use fp16 (preferred on V100's).")
 def main(**kwargs):
     train(**kwargs)
 
