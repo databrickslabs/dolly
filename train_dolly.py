@@ -91,6 +91,7 @@ dbutils.widgets.text("num_gpus", "", "num_gpus")
 dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 dbutils.widgets.text("experiment_id", "", "experiment_id")
+dbutils.widgets.dropdown("gpu_family", "a100", ["a100", "a10", "v100"])
 
 # COMMAND ----------
 
@@ -112,8 +113,10 @@ if experiment_id:
 
 checkpoint_dir_name = f"{model_name}__{timestamp}"
 
+# pick an appropriate config file
+gpu_family = dbutils.widgets.get("gpu_family")
 root_path = os.getcwd()
-deepspeed_config = os.path.join(root_path, "config/ds_z3_bf16_config.json")
+deepspeed_config = os.path.join(root_path, f"config/{gpu_family}_config.json")
 
 dolly_training_dir_name = "dolly_training"
 
@@ -158,22 +161,22 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # COMMAND ----------
 
-# MAGIC !deepspeed {num_gpus_flag} \
-# MAGIC     --module training.trainer \
-# MAGIC     --input-model {input_model} \
-# MAGIC     --deepspeed {deepspeed_config} \
-# MAGIC     --epochs 2 \
-# MAGIC     --local-output-dir {local_output_dir} \
-# MAGIC     --dbfs-output-dir {dbfs_output_dir} \
-# MAGIC     --per-device-train-batch-size 6 \
-# MAGIC     --per-device-eval-batch-size 6 \
-# MAGIC     --logging-steps 10 \
-# MAGIC     --save-steps 200 \
-# MAGIC     --save-total-limit 20 \
-# MAGIC     --eval-steps 50 \
-# MAGIC     --warmup-steps 50 \
-# MAGIC     --test-size 200 \
-# MAGIC     --lr 5e-6
+!deepspeed {num_gpus_flag} \
+    --module training.trainer \
+    --input-model {input_model} \
+    --deepspeed {deepspeed_config} \
+    --epochs 2 \
+    --local-output-dir {local_output_dir} \
+    --dbfs-output-dir {dbfs_output_dir} \
+    --per-device-train-batch-size 6 \
+    --per-device-eval-batch-size 6 \
+    --logging-steps 10 \
+    --save-steps 200 \
+    --save-total-limit 20 \
+    --eval-steps 50 \
+    --warmup-steps 50 \
+    --test-size 200 \
+    --lr 5e-6
 
 # COMMAND ----------
 
