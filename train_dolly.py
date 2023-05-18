@@ -140,10 +140,20 @@ gpu_family = dbutils.widgets.get("gpu_family")
 root_path = os.getcwd()
 deepspeed_config = os.path.join(root_path, f"config/{gpu_family}_config.json")
 
+tensorboard_display_dir = f"{local_output_dir}/runs"
+
+print(f"Local Output Dir: {local_output_dir}")
+print(f"DBFS Output Dir: {dbfs_output_dir}")
+print(f"Tensorboard Display Dir: {tensorboard_display_dir}")
+
 # configure the batch_size
 batch_size = 3
 if gpu_family == "a100":
-  batch_size = 6
+    batch_size = 6
+
+# configure CUDA memory management
+if gpu_family == "v100":
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:64"
 
 # configure num_gpus, if specified
 num_gpus_flag = ""
@@ -152,11 +162,12 @@ if num_gpus:
     num_gpus = int(num_gpus)
     num_gpus_flag = f"--num_gpus={num_gpus}"
 
-tensorboard_display_dir = f"{local_output_dir}/runs"
-
-print(f"Local Output Dir: {local_output_dir}")
-print(f"DBFS Output Dir: {dbfs_output_dir}")
-print(f"Tensorboard Display Dir: {tensorboard_display_dir}")
+# configure floating point arithmetic format
+float_format_flag = ""
+if gpu_family == "a100" or gpu_family == "a10":
+    float_format_flag = "--bf16=True"
+elif gpu_family == "v100":
+    float_format_flag = "--fp16=True"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -182,7 +193,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
     --eval-steps 50 \
     --warmup-steps 50 \
     --test-size 200 \
-    --lr 5e-6
+    --lr 5e-6 \
+    {float_format_flag}
 
 # COMMAND ----------
 
