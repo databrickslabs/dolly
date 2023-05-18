@@ -1,5 +1,5 @@
 {
-    "bf16": {
+    "fp16": {
       "enabled": "auto"
     },
     "optimizer": {
@@ -29,7 +29,11 @@
       "stage3_param_persistence_threshold": "auto",
       "stage3_max_live_parameters": 1e9,
       "stage3_max_reuse_distance": 1e9,
-      "stage3_gather_16bit_weights_on_model_save": true
+      "stage3_gather_16bit_weights_on_model_save": true,
+      "offload_optimizer": {
+        "device": "cpu",
+        "pin_memory": true
+      }
     },
     "gradient_accumulation_steps": "auto",
     "gradient_clipping": "auto",
