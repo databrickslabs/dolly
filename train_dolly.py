@@ -91,7 +91,7 @@ dbutils.widgets.text("num_gpus", "", "num_gpus")
 dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 dbutils.widgets.text("experiment_id", "", "experiment_id")
-dbutils.widgets.combobox("gpu_family", "a100", ["v100", "a10", "a100"])
+dbutils.widgets.combobox("gpu_family", "a100", ["v100", "a100"])
 
 # COMMAND ----------
 
@@ -164,7 +164,7 @@ if num_gpus:
 
 # configure floating point arithmetic format
 float_format_flag = ""
-if gpu_family == "a100" or gpu_family == "a10":
+if gpu_family == "a100":
     float_format_flag = "--bf16=True"
 elif gpu_family == "v100":
     float_format_flag = "--fp16=True"
