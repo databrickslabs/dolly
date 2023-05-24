@@ -200,9 +200,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from training.generate import generate_response, load_model_tokenizer_for_generate
 
-model, tokenizer = load_model_tokenizer_for_generate(local_output_dir)
+model, tokenizer = load_model_tokenizer_for_generate(dbfs_output_dir)
 
 # COMMAND ----------
+
+import torch
 
 # Examples from https://www.databricks.com/blog/2023/03/24/hello-dolly-democratizing-magic-chatgpt-open-models.html
 instructions = [
@@ -213,8 +215,18 @@ instructions = [
     "Give me a list of 5 science fiction books I should read next.",
 ]
 
+# set some additional pipeline args
+if gpu_family == "v100":
+    pipeline_kwargs = {'torch_dtype': torch.float16}
+else:
+    pipeline_kwargs = {}
+
 # Use the model to generate responses for each of the instructions above.
 for instruction in instructions:
-    response = generate_response(instruction, model=model, tokenizer=tokenizer)
+    response = generate_response(instruction, model=model, tokenizer=tokenizer, **pipeline_kwargs)
     if response:
         print(f"Instruction: {instruction}\n\n{response}\n\n-----------\n")
+
+# COMMAND ----------
+
+
