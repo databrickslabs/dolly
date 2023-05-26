@@ -96,36 +96,40 @@ Otherwise, follow the steps above. The 12B param model may not function well in 
 A100 instance types are not available in all cloud regions, or can be hard to provision. Training is possible on other GPU instance types, 
 for smaller Dolly model sizes, and with small modifications to reduce memory usage. These modifications are not optimal, but are simple to make. 
 
-Select your GPU family type from the `gpu_family` widget and then run the rest of the code. 
+Select your GPU family type from the `gpu_family` widget, enter the number of GPUs available in the `num_gpus` widget, and then run the rest of the code. 
 A number of different options will be set for you to train the model for one of the following GPU types:
 - A100 (default)
+- A10 
 - V100
-- A10 (in progress, see below for manual configuration details)
+
+Details of the different configurations are below.
+
+#### A100 GPUs
+
+A100 GPUs are preferred for training all model sizes, and are the only GPUs that can train the 12B param model in a reasonable amount of time.
+As such, this is the default configuration, as set in the `a100_config.json` deepspeed config file.
 
 #### A10 GPUs
 
 Training the 12B param model is not recommended on A10s.
 
-To train the 6.9B param model on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_v5`, 2 x A10), make the following changes:
+To train the 6.9B param model on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_v5`, 2 x A10),
+simply select `a10` from the `gpu_family` widget and enter the number of GPUs available in the `num_gpus` widget, then run the rest of the code. 
+This will use the `a10_config.json` deepspeed config file, which makes the following changes:
 
-- Set `per-device-train-batch-size` and `per-device-eval-batch-size` to 3 in the `train_dolly.py` invocation of `deepspeed`
-- Modify the deepspeed config file `a10_a100_config.json` to configure optimizer offload. Within the `"zero_optimization"` section, add:
+- `per-device-train-batch-size` and `per-device-eval-batch-size` are set to 3 in the `train_dolly.py` invocation of `deepspeed`
+- Within the `"zero_optimization"` section of the deepspeed config, we have added:
   ```
   "offload_optimizer": {
     "device": "cpu",
     "pin_memory": true
   },
   ```
-- Set the `num_gpus` widget in `train_dolly` to the number of GPUs in your instance, such as 2 or 4, before running
-
-To train the 2.8B param model:
-
-- Instead, only set `per-device-train-batch-size` and `per-device-eval-batch-size` to 3 in the `train_dolly.py` invocation of `deepspeed`
 
 #### V100 GPUs
 
 To run on V100 instances with 32GB of GPU memory (ex: `p3dn.24xlarge` or `Standard_ND40rs_v2`), 
-simply select `v100` from the `gpu_family` widget and then run the rest of the code. 
+simply select `v100` from the `gpu_family` widget and enter the number of GPUs available in the `num_gpus` widget, and then run the rest of the code. 
 This will use the `v100_config.json` deepspeed config file, which makes the following changes:
 
 - It makes the changes described above for A10s
