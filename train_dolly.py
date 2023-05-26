@@ -34,14 +34,14 @@
 
 # COMMAND ----------
 
-!wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb -O /tmp/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb && \
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcublas-dev-11-3_11.5.1.109-1_amd64.deb -O /tmp/libcublas-dev-11-3_11.5.1.109-1_amd64.deb && \
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb -O /tmp/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb && \
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcurand-dev-11-3_10.2.4.109-1_amd64.deb -O /tmp/libcurand-dev-11-3_10.2.4.109-1_amd64.deb && \
-  dpkg -i /tmp/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb && \
-  dpkg -i /tmp/libcublas-dev-11-3_11.5.1.109-1_amd64.deb && \
-  dpkg -i /tmp/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb && \
-  dpkg -i /tmp/libcurand-dev-11-3_10.2.4.109-1_amd64.deb
+# MAGIC !wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb -O /tmp/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb && \
+# MAGIC   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcublas-dev-11-3_11.5.1.109-1_amd64.deb -O /tmp/libcublas-dev-11-3_11.5.1.109-1_amd64.deb && \
+# MAGIC   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb -O /tmp/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb && \
+# MAGIC   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcurand-dev-11-3_10.2.4.109-1_amd64.deb -O /tmp/libcurand-dev-11-3_10.2.4.109-1_amd64.deb && \
+# MAGIC   dpkg -i /tmp/libcusparse-dev-11-3_11.5.0.58-1_amd64.deb && \
+# MAGIC   dpkg -i /tmp/libcublas-dev-11-3_11.5.1.109-1_amd64.deb && \
+# MAGIC   dpkg -i /tmp/libcusolver-dev-11-3_11.1.2.109-1_amd64.deb && \
+# MAGIC   dpkg -i /tmp/libcurand-dev-11-3_10.2.4.109-1_amd64.deb
 
 # COMMAND ----------
 
@@ -171,22 +171,22 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # COMMAND ----------
 
-!deepspeed {num_gpus_flag} \
-    --module training.trainer \
-    --input-model {input_model} \
-    --deepspeed {deepspeed_config} \
-    --epochs 2 \
-    --local-output-dir {local_output_dir} \
-    --dbfs-output-dir {dbfs_output_dir} \
-    --per-device-train-batch-size {batch_size} \
-    --per-device-eval-batch-size {batch_size} \
-    --logging-steps 10 \
-    --save-steps 200 \
-    --save-total-limit 20 \
-    --eval-steps 50 \
-    --warmup-steps 50 \
-    --test-size 200 \
-    --lr 5e-6
+# MAGIC !deepspeed {num_gpus_flag} \
+# MAGIC     --module training.trainer \
+# MAGIC     --input-model {input_model} \
+# MAGIC     --deepspeed {deepspeed_config} \
+# MAGIC     --epochs 2 \
+# MAGIC     --local-output-dir {local_output_dir} \
+# MAGIC     --dbfs-output-dir {dbfs_output_dir} \
+# MAGIC     --per-device-train-batch-size {batch_size} \
+# MAGIC     --per-device-eval-batch-size {batch_size} \
+# MAGIC     --logging-steps 10 \
+# MAGIC     --save-steps 200 \
+# MAGIC     --save-total-limit 20 \
+# MAGIC     --eval-steps 50 \
+# MAGIC     --warmup-steps 50 \
+# MAGIC     --test-size 200 \
+# MAGIC     --lr 5e-6
 
 # COMMAND ----------
 

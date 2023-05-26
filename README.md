@@ -109,7 +109,7 @@ Training the 12B param model is not recommended on A10s.
 To train the 6.9B param model on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB; `Standard_NV72ads_A10_v5`, 2 x A10), make the following changes:
 
 - Set `per-device-train-batch-size` and `per-device-eval-batch-size` to 3 in the `train_dolly.py` invocation of `deepspeed`
-- Modify the deepspeed config file `a100_config.json` to configure optimizer offload. Within the `"zero_optimization"` section, add:
+- Modify the deepspeed config file `a10_a100_config.json` to configure optimizer offload. Within the `"zero_optimization"` section, add:
   ```
   "offload_optimizer": {
     "device": "cpu",
@@ -121,6 +121,18 @@ To train the 6.9B param model on A10 instances (ex: `g5.24xlarge`, 4 x A10 24GB;
 To train the 2.8B param model:
 
 - Instead, only set `per-device-train-batch-size` and `per-device-eval-batch-size` to 3 in the `train_dolly.py` invocation of `deepspeed`
+
+#### V100 GPUs
+
+To run on V100 instances with 32GB of GPU memory (ex: `p3dn.24xlarge` or `Standard_ND40rs_v2`), 
+simply select `v100` from the `gpu_family` widget and then run the rest of the code. 
+This will use the `v100_config.json` deepspeed config file, which makes the following changes:
+
+- It makes the changes described above for A10s
+- It enables fp16 floating point format
+- It sets the `per-device-train-batch-size` and `per-device-eval-batch-size` to 3
+  
+You may be able to slightly increase the batch size with 32GB instances, compared to what works above for 24GB A10s.
 
 ## Running Unit Tests Locally
 
