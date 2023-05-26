@@ -192,8 +192,6 @@ model, tokenizer = load_model_tokenizer_for_generate(dbfs_output_dir)
 
 # COMMAND ----------
 
-import torch
-
 # Examples from https://www.databricks.com/blog/2023/03/24/hello-dolly-democratizing-magic-chatgpt-open-models.html
 instructions = [
     "Write a love letter to Edgar Allan Poe.",
@@ -204,10 +202,11 @@ instructions = [
 ]
 
 # set some additional pipeline args
+pipeline_kwargs = {'torch_dtype': "auto"}
 if gpu_family == "v100":
-    pipeline_kwargs = {'torch_dtype': torch.float16}
-else:
-    pipeline_kwargs = {}
+    pipeline_kwargs['torch_dtype'] = "float16"
+elif gpu_family == "a10" or gpu_family == "a100":
+    pipeline_kwargs['torch_dtype'] = "bfloat16"
 
 # Use the model to generate responses for each of the instructions above.
 for instruction in instructions:
