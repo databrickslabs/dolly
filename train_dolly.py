@@ -142,11 +142,7 @@ print(f"Tensorboard Display Dir: {tensorboard_display_dir}")
 
 # pick an appropriate config file
 gpu_family = dbutils.widgets.get("gpu_family")
-
-config_file_name = "a10_a100_config.json"
-if gpu_family == "v100":
-  config_file_name = "v100_config.json"
-
+config_file_name = f"{gpu_family}_config.json"
 deepspeed_config = os.path.join(os.getcwd(), "config", config_file_name)
 print(f"Deepspeed config file: {deepspeed_config}")
 
