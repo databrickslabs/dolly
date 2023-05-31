@@ -319,14 +319,3 @@ def train(
 @click.option("--bf16", type=bool, default=True, help="Whether to use bf16 (preferred on A100's).")
 def main(**kwargs):
     train(**kwargs)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s [%(name)s] %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    try:
-        main()
-    except Exception:
-        logger.exception("main failed")
-        raise
