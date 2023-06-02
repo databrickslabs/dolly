@@ -1,5 +1,4 @@
 -r requirements.txt
 pytest-cov==3.0.0
 pytest==7.1.2
-torch==1.13.1
 torchvision==0.14.1
