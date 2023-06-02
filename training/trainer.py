@@ -232,6 +232,9 @@ def train(
         tokenizer=tokenizer, mlm=False, return_tensors="pt", pad_to_multiple_of=8
     )
 
+    # enable fp16 if not bf16
+    fp16 = not bf16
+
     if not dbfs_output_dir:
         logger.warn("Will NOT save to DBFS")
 
@@ -239,7 +242,7 @@ def train(
         output_dir=local_output_dir,
         per_device_train_batch_size=per_device_train_batch_size,
         per_device_eval_batch_size=per_device_eval_batch_size,
-        fp16=False,
+        fp16=fp16,
         bf16=bf16,
         learning_rate=lr,
         num_train_epochs=epochs,
@@ -316,7 +319,7 @@ def train(
     default=True,
     help="Provided by deepspeed to identify which instance this process is when performing multi-GPU training.",
 )
-@click.option("--bf16", type=bool, default=True, help="Whether to use bf16 (preferred on A100's).")
+@click.option("--bf16", type=bool, default=None, help="Whether to use bf16 (preferred on A100's).")
 def main(**kwargs):
     train(**kwargs)
 

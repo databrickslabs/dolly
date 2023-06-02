@@ -50,10 +50,10 @@
 
 # COMMAND ----------
 
-#!wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusparse-dev-11-7_11.7.3.50-1_amd64.deb -O /tmp/libcusparse-dev-11-7_11.7.3.50-1_amd64.deb && \
-#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcublas-dev-11-7_11.10.1.25-1_amd64.deb -O /tmp/libcublas-dev-11-7_11.10.1.25-1_amd64.deb && \
-#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcusolver-dev-11-7_11.4.0.1-1_amd64.deb -O /tmp/libcusolver-dev-11-7_11.4.0.1-1_amd64.deb && \
-#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/libcurand-dev-11-7_10.2.10.91-1_amd64.deb -O /tmp/libcurand-dev-11-7_10.2.10.91-1_amd64.deb && \
+#!wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/libcusparse-dev-11-7_11.7.3.50-1_amd64.deb -O /tmp/libcusparse-dev-11-7_11.7.3.50-1_amd64.deb && \
+#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/libcublas-dev-11-7_11.10.1.25-1_amd64.deb -O /tmp/libcublas-dev-11-7_11.10.1.25-1_amd64.deb && \
+#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/libcusolver-dev-11-7_11.4.0.1-1_amd64.deb -O /tmp/libcusolver-dev-11-7_11.4.0.1-1_amd64.deb && \
+#  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/libcurand-dev-11-7_10.2.10.91-1_amd64.deb -O /tmp/libcurand-dev-11-7_10.2.10.91-1_amd64.deb && \
 #  dpkg -i /tmp/libcusparse-dev-11-7_11.7.3.50-1_amd64.deb && \
 #  dpkg -i /tmp/libcublas-dev-11-7_11.10.1.25-1_amd64.deb && \
 #  dpkg -i /tmp/libcusolver-dev-11-7_11.4.0.1-1_amd64.deb && \
@@ -91,6 +91,7 @@ dbutils.widgets.text("num_gpus", "", "num_gpus")
 dbutils.widgets.text("local_training_root", "", "local_training_root")
 dbutils.widgets.text("dbfs_output_root", "", "dbfs_output_root")
 dbutils.widgets.text("experiment_id", "", "experiment_id")
+dbutils.widgets.combobox("gpu_family", "a100", ["v100", "a10", "a100"])
 
 # COMMAND ----------
 
@@ -111,9 +112,6 @@ if experiment_id:
     model_name = f"{model_name}__{experiment_id}"
 
 checkpoint_dir_name = f"{model_name}__{timestamp}"
-
-root_path = os.getcwd()
-deepspeed_config = os.path.join(root_path, "config/ds_z3_bf16_config.json")
 
 dolly_training_dir_name = "dolly_training"
 
@@ -136,18 +134,31 @@ os.makedirs(dbfs_output_root, exist_ok=True)
 
 local_output_dir = os.path.join(local_training_root, checkpoint_dir_name)
 dbfs_output_dir = os.path.join(dbfs_output_root, checkpoint_dir_name)
-
-num_gpus_flag = ""
-num_gpus = dbutils.widgets.get("num_gpus")
-if num_gpus:
-    num_gpus = int(num_gpus)
-    num_gpus_flag = f"--num_gpus={num_gpus}"
-
 tensorboard_display_dir = f"{local_output_dir}/runs"
 
 print(f"Local Output Dir: {local_output_dir}")
 print(f"DBFS Output Dir: {dbfs_output_dir}")
 print(f"Tensorboard Display Dir: {tensorboard_display_dir}")
+
+# pick an appropriate config file
+gpu_family = dbutils.widgets.get("gpu_family")
+config_file_name = f"{gpu_family}_config.json"
+deepspeed_config = os.path.join(os.getcwd(), "config", config_file_name)
+print(f"Deepspeed config file: {deepspeed_config}")
+
+# configure the batch_size
+batch_size = 3
+if gpu_family == "a10":
+    batch_size = 4
+elif gpu_family == "a100":
+    batch_size = 6
+
+# configure num_gpus, if specified
+num_gpus_flag = ""
+num_gpus = dbutils.widgets.get("num_gpus")
+if num_gpus:
+    num_gpus = int(num_gpus)
+    num_gpus_flag = f"--num_gpus={num_gpus}"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -158,28 +169,28 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # COMMAND ----------
 
-# MAGIC !deepspeed {num_gpus_flag} \
-# MAGIC     --module training.trainer \
-# MAGIC     --input-model {input_model} \
-# MAGIC     --deepspeed {deepspeed_config} \
-# MAGIC     --epochs 2 \
-# MAGIC     --local-output-dir {local_output_dir} \
-# MAGIC     --dbfs-output-dir {dbfs_output_dir} \
-# MAGIC     --per-device-train-batch-size 6 \
-# MAGIC     --per-device-eval-batch-size 6 \
-# MAGIC     --logging-steps 10 \
-# MAGIC     --save-steps 200 \
-# MAGIC     --save-total-limit 20 \
-# MAGIC     --eval-steps 50 \
-# MAGIC     --warmup-steps 50 \
-# MAGIC     --test-size 200 \
-# MAGIC     --lr 5e-6
+!deepspeed {num_gpus_flag} \
+    --module training.trainer \
+    --input-model {input_model} \
+    --deepspeed {deepspeed_config} \
+    --epochs 2 \
+    --local-output-dir {local_output_dir} \
+    --dbfs-output-dir {dbfs_output_dir} \
+    --per-device-train-batch-size {batch_size} \
+    --per-device-eval-batch-size {batch_size} \
+    --logging-steps 10 \
+    --save-steps 200 \
+    --save-total-limit 20 \
+    --eval-steps 50 \
+    --warmup-steps 50 \
+    --test-size 200 \
+    --lr 5e-6
 
 # COMMAND ----------
 
 from training.generate import generate_response, load_model_tokenizer_for_generate
 
-model, tokenizer = load_model_tokenizer_for_generate(local_output_dir)
+model, tokenizer = load_model_tokenizer_for_generate(dbfs_output_dir)
 
 # COMMAND ----------
 
@@ -192,8 +203,19 @@ instructions = [
     "Give me a list of 5 science fiction books I should read next.",
 ]
 
+# set some additional pipeline args
+pipeline_kwargs = {'torch_dtype': "auto"}
+if gpu_family == "v100":
+    pipeline_kwargs['torch_dtype'] = "float16"
+elif gpu_family == "a10" or gpu_family == "a100":
+    pipeline_kwargs['torch_dtype'] = "bfloat16"
+
 # Use the model to generate responses for each of the instructions above.
 for instruction in instructions:
-    response = generate_response(instruction, model=model, tokenizer=tokenizer)
+    response = generate_response(instruction, model=model, tokenizer=tokenizer, **pipeline_kwargs)
     if response:
         print(f"Instruction: {instruction}\n\n{response}\n\n-----------\n")
+
+# COMMAND ----------
+
+
