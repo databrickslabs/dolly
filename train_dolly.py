@@ -160,6 +160,11 @@ if num_gpus:
     num_gpus = int(num_gpus)
     num_gpus_flag = f"--num_gpus={num_gpus}"
 
+if gpu_family == "v100":
+    bf16_flag = "--bf16 false"
+else:
+    bf16_flag = "--bf16 true"
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # COMMAND ----------
@@ -184,7 +189,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
     --eval-steps 50 \
     --warmup-steps 50 \
     --test-size 200 \
-    --lr 5e-6
+    --lr 5e-6 \
+    {bf16_flag}
 
 # COMMAND ----------
 
