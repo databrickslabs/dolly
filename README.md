@@ -147,3 +147,15 @@ python -m venv .venv
 pip install -r requirements_dev.txt
 ./run_pytest.sh
 ```
+
+# Citation
+
+```
+@online{DatabricksBlog2023DollyV2,
+    author    = {Mike Conover and Matt Hayes and Ankit Mathur and Jianwei Xie and Jun Wan and Sam Shah and Ali Ghodsi and Patrick Wendell and Matei Zaharia and Reynold Xin},
+    title     = {Free Dolly: Introducing the World's First Truly Open Instruction-Tuned LLM},
+    year      = {2023},
+    url       = {https://www.databricks.com/blog/2023/04/12/dolly-first-open-commercially-viable-instruction-tuned-llm},
+    urldate   = {2023-06-30}
+}
+```
