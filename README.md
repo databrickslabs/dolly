@@ -148,7 +148,7 @@ pip install -r requirements_dev.txt
 ./run_pytest.sh
 ```
 
-# Citation
+## Citation
 
 ```
 @online{DatabricksBlog2023DollyV2,
