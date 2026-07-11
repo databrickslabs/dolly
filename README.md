@@ -159,3 +159,7 @@ pip install -r requirements_dev.txt
     urldate   = {2023-06-30}
 }
 ```
+
+---
+
+*[Mukller](https://github.com/Mukller)*
